@@ -1,0 +1,356 @@
+---
+title: "Web scraping - Glassdoor"
+author: "Heather Lendway"
+output:
+  prettydoc::html_pretty:
+    highlight: vignette
+    theme: cayman
+  bookdown::tufte_html2:
+    number_sections: no
+    split_by: none
+    toc: no
+  bookdown::html_document2:
+    number_sections: no
+    split_by: none
+    toc: yes
+    toc_float:
+      collapsed: yes
+  rmarkdown::html_document:
+    highlight: espresso
+    theme: lumen
+---
+
+Oftentimes the data set you want to work isn't available in a workable format, it's in a table on a web page, in a database you can query or it's smattered throughout pages on a website.  There a few options for accessing data like this.
+
+* Use the website API to access data
+    + This is a pretty comprehensive list of [existing API's.](https://github.com/abhishekbanthia/Public-APIs)
+    + Note, there may be API call limits so you may need to add Sys.sleep(1) calls to your code.
+* Manually scrape the page you want
+    + Read and parse html
+      + Use the SelectorGadget Chrome add in for help getting the tags you want
+          + Downside, not all web pages have html that is tagged well so you may need to dig in tag by tag if there aren't many class names associated to tags.
+          + Tags may change result page to result page so you may need to use more general tag/class names than the selector gives you.
+          + If you're just scraping one page it can be quick.
+    + Read and parse json
+
+### Glassdoor Search Companies by Location
+
+* Browse to https://www.glassdoor.com/index.htm, click on the companies tab. 
+* Open developer tools and go to the network tab. Start typing in a location and see what happens.
+    + Click one of the links that pops up and you can see the request URL generated for a search term.
+    + Browse to that URL and you'll see the JSON list of possible results - We'll use these to create our links
+    + Clear the network tab and submit your search. The URL you end up at doesn't look familiar but if you look in the network tab, scroll to the top of the list and you can see the request URL and click it.
+          + Here you can see the request URL was actually very different.  If you scroll down to the bottom you'll see the request params, some of which should look familiar.  Location T and Location id were in the JSON we saw earlier.  
+          + We now have the links need to generate a link to the result page based on the city we want to search. 
+
+![Glassdoor homepage.](LocationJSON.png)
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(jsonlite)
+library(rvest)
+
+```
+
+
+### Reading JSON For Company Location Id and Type
+
+
+```{r}
+# Get results links for location company search
+location <- "Saint Paul"
+location <- gsub(" ","+",location)
+location_json <- paste0("https://www.glassdoor.com/findPopularLocationAjax.htm?term=",location,"&maxLocationsToReturn=10")
+
+document <- jsonlite::fromJSON(location_json)
+
+location_companies_url <- paste0("https://www.glassdoor.com/Reviews/company-reviews.htm?suggestCount=0&suggestChosen=false&clickSource=searchBtn&typedKeyword=&sc.keyword=&locT=",document$locationType[1],"&locId=",document$locationId[1],"&jobType=")
+```
+
+
+```{r}
+# Get results links for location company search
+location <- "Saint Paul"
+# Replace spaces with + for request URL
+location <- gsub(" ","+",location)
+location_json <- paste0("https://www.glassdoor.com/findPopularLocationAjax.htm?term=",location,"&maxLocationsToReturn=10")
+# Read the JSON for the location link created above
+document <- jsonlite::fromJSON(location_json)
+
+# Build the link to the result page for the location selected
+# Deafult to select the first result, as it's most likely the correct match.  
+# If you're not sure you could loop through and pull results for all possible cities.
+location_companies_url <- paste0("https://www.glassdoor.com/Reviews/company-reviews.htm?suggestCount=0&suggestChosen=false&clickSource=searchBtn&typedKeyword=&sc.keyword=&locT=",document$locationType[1],"&locId=",document$locationId[1],"&jobType=")
+```
+
+### Reading html
+
+```{r}
+#Read the first result page of companies for that city
+#i.e. html that corresponds to https://www.glassdoor.com/Reviews/minneapolis-reviews-SRCH_IL.0,11_IM567.htm
+location_results <- read_html(location_companies_url)
+
+#get links to company result pages 2-10
+next_page_url <- location_results %>%  
+  html_nodes(".pagingControls.cell.middle") %>% 
+  html_node("a") %>% 
+  html_attr("href") %>% 
+  toString()
+
+next_page_url_string <- paste0("https://www.glassdoor.com",next_page_url)
+
+#add the first result page to the list
+result_pages <- tibble(location_companies_url)
+colnames(result_pages) <- c("link")
+
+for(k in 2:10) {
+  
+  link <- gsub("_IP2",paste0("_IP",k),next_page_url_string)
+  
+  result_pages <- result_pages %>% 
+    bind_rows(tibble(link))
+}
+```
+
+
+### Accessing html nodes, attributes and their values
+
+* Reference any html node(s) by class name using "." followed by the class name. 
+    + rvest::html_nodes(".class_name") - will get all nodes with that class name.  Make sure the name you selected is specific enough to the set of nodes you want.  Many nodes have multiple class names so you may pull back more or less nodes than you want if you're not specific enough/too specific. 
+    + If you want to get a very specific tag use the tag name at the beginning followed by all the class names, using "." for spaces, i.e. "div.multiple.class.name"
+    + You can also pull multiple tags using ".class_name_1,class_name_2,class_name_n".
+    + rvest::html_node(".class_name") - returns the first node with that class name. 
+    + If there are multiple child nodes you can also use :nth-child(number) to get a specific child node. i.e.  html_node(".class_name:nth-child(3)")
+* Grab a specific attribute within a tag using the attribute name.
+    + rvest::html_attr("attr_name")
+* To grab the actual value of the tag use, rvest::html_text()
+![Glassdoor homepage.](companyResults.png)
+
+
+```{r}
+company_urls <- location_results %>% 
+  html_nodes(".empLinks") %>% 
+  html_node(".reviews") %>% 
+  html_attr("href")
+  
+#Create a tibble of URLs, add full glassdoor address 
+review_urls_df <- tibble(company_urls) %>% 
+  mutate(full_url = paste0("https://www.glassdoor.com",company_urls,"?sort.sortType=RD&sort.ascending=false&filter.employmentStatus=REGULAR&filter.employmentStatus=PART_TIME&filter.employmentStatus=UNKNOWN"))
+```
+
+### Run through result links and compile reviews
+```{r, results="hide"}
+#Now we need to get all the company page results links
+#With developer tools mouse over a few review links to see what html node we need
+
+company_reviews <- tibble()
+#h=0 # for testing
+for(h in 1:length(result_pages$link)) {
+
+  #We already read the first page, once we get past that read subsequent pages.
+  #Could clean this up.
+  location_results <- read_html(result_pages$link[h])
+  
+  #Get the link to each company review page
+  company_urls <- location_results %>% 
+    html_nodes(".empLinks") %>% 
+    html_node(".reviews") %>% 
+    html_attr("href")
+  
+  #Create a tibble of URLs, add full glassdoor address 
+  review_urls_df <- tibble(company_urls) %>% 
+    mutate(full_url = paste0("https://www.glassdoor.com",company_urls,"?sort.sortType=RD&sort.ascending=false&filter.employmentStatus=REGULAR&filter.employmentStatus=PART_TIME&filter.employmentStatus=UNKNOWN"))
+  
+  #i<- 1 #for testing
+  
+  #Reading the first ten reviews for each company
+  for(i in 1:length(review_urls_df$full_url)) {
+    
+    review_page <- read_html(review_urls_df$full_url[i])
+    
+    company <- review_page %>%
+      html_node("p.h1.strong.tightAll") %>% 
+      html_attr("data-company") %>% 
+      toString()
+    
+    hreview_nodes <- review_page %>% 
+      html_nodes(".hreview")
+    
+    #j=4 #for testing
+    for(j in 1:length(hreview_nodes)) {
+      
+      #Actually want the numerical datetime as it's easier to work with the raw date
+      #So grab the html_attr() instead of tag value
+      time <- hreview_nodes[j] %>% 
+        html_nodes("time.date.subtle.small") %>% 
+        html_attr("datetime") %>% 
+        toString()
+        
+      title <- hreview_nodes[j] %>% 
+        html_nodes("span.summary") %>% 
+        html_text() %>% 
+        toString()
+       
+      #This is a bit more work to pull this out, main star rating and three hidden
+      #stars <- hreview_nodes[j] %>% 
+        #html_nodes("") %>% 
+        #html_text() %>% 
+        #toString()
+        
+      job_title <- hreview_nodes[j] %>% 
+        html_nodes("span.authorJobTitle.middle.reviewer") %>% 
+        html_text() %>% 
+        toString()
+        
+      job_location <- hreview_nodes[j] %>% 
+        html_nodes("span.authorLocation") %>% 
+        html_text() %>% 
+        toString()
+      
+      # all the ratings are in spans with the same class so grab them all and assign to variables in order
+      ratings <- hreview_nodes[j] %>% 
+        html_nodes("div.row.reviewBodyCell") %>% 
+        html_nodes("span") %>% 
+        html_text()
+      
+      # Not all ratings are always filled in so check to see which rating it is and asign to corrsponding var
+      recommends_rating <- NA
+      outlook_rating <- NA
+      ceo_rating <- NA
+      #n=1 #for testing
+      for(n in 1:length(ratings)) {
+        
+        if(length(ratings[n]) > 0) {
+          
+          rating_string <- ratings[n] %>% 
+              toString()
+          
+          if(str_detect(rating_string,"Recommend")) {
+            recommends_rating <- rating_string
+          } else if(str_detect(rating_string,"Outlook")) {
+            outlook_rating <- rating_string
+          } else if(str_detect(rating_string,"CEO")) {
+            ceo_rating <- rating_string
+          } 
+        }
+      }
+        
+      experience <- hreview_nodes[j] %>% 
+        html_nodes("p.mainText") %>% 
+        html_text() %>% 
+        toString()
+        
+      pro_con_advice_nodes <- hreview_nodes[j] %>% 
+        html_nodes("div.mt-md")
+      
+      # Not all responses are always filled in so check to see which it is and asign to corrsponding var
+      pros <- NA
+      cons <- NA
+      advice_to_management <- NA
+      #m=1 #for testing
+      for(m in 1:length(pro_con_advice_nodes)) {
+        
+        if(length(pro_con_advice_nodes[m]) > 0) {
+          
+          title_string <- pro_con_advice_nodes[m] %>% 
+            html_nodes("p:nth-child(1)") %>%
+            html_text() %>% 
+            toString()
+          
+          if(str_detect(title_string,"Pros")) {
+            pros <- pro_con_advice_nodes[m] %>% 
+              html_nodes("p:nth-child(2)") %>%
+              html_text() %>% 
+              toString()
+          } else if(str_detect(title_string,"Cons")) {
+            cons <- pro_con_advice_nodes[m] %>% 
+              html_nodes("p:nth-child(2)") %>%
+              html_text() %>% 
+              toString()
+          } else if(str_detect(title_string,"Advice")) {
+            advice_to_management <- pro_con_advice_nodes[m] %>% 
+              html_nodes("p:nth-child(2)") %>%
+              html_text() %>% 
+              toString()
+          } 
+        }
+      }
+      
+      row <- tibble(company,time,title,job_title,job_location,recommends_rating,outlook_rating,ceo_rating,experience,pros,cons,advice_to_management)
+      
+      company_reviews <- company_reviews %>% 
+        bind_rows(row)
+      
+      #Job is likely to fail as you get it up and running so I like to print loop numbers to get insight into where the failure occured.
+      print(paste0("Review number: ",j))
+    }
+      
+    print(paste0("Company number: ",i))
+  }
+  
+  print(paste0("Result page number: ",h))
+}
+
+
+```
+
+
+### Why did I choose a loop instead of nodesets?
+
+```{r}
+review_page <- read_html("https://www.glassdoor.com/Reviews/Target-Reviews-E194.htm?sort.sortType=RD&sort.ascending=false&filter.employmentStatus=REGULAR&filter.employmentStatus=PART_TIME&filter.employmentStatus=UNKNOWN")
+  
+hreview_nodes <- review_page %>% 
+  html_nodes(".hreview")
+
+#Compare the lengths of the following result lists
+experience_test <- hreview_nodes %>% 
+  html_nodes("p.tightBot.mainText") %>% 
+  html_text()
+  
+pros_test <- hreview_nodes %>% 
+  html_nodes("p.pros.mainText.truncateThis.wrapToggleStr") %>% 
+  html_text()
+
+#Because not every value will always be filled in, with a loop you can track which blanks match which review.
+
+```
+
+
+### Multiple results pages
+Without logging in you can only access one page of reviews.  If you can log into the site with your request you can get the next set of results with the following URL to start.  
+https://www.glassdoor.com/Reviews/Target-Reviews-E194_P2.htm
+
+
+### Slide setup :)
+
+```{r}
+html_node() #Pull the first node that meets the critera
+html_nodes() #Pull the entire nodeset that meets the criteria
+
+Sample Html:
+<tag_name class="class_name"> ... </tag_name>
+<tag_name class="class_name2"> ... </tag_name>
+<tag_name2 class="class_name3"> ... </tag_name2>
+<tag_name2 class="class name four"> ... </tag_name2>
+  
+html_nodes(".class_name") --> <tag_name class="class_name"> ... </tag_name>
+  
+html_nodes("tag_name") --> <tag_name class="class_name"> ... </tag_name>
+                           <tag_name class="class_name2"> ... </tag_name>
+  
+html_nodes("tag_name.class_name") --> <tag_name class="class_name"> ... </tag_name>
+  
+html_nodes("tag_name.class_name,tag_name.class_name2,tag_name2.class_name3") --> <tag_name class="class_name"> ... </tag_name>
+                                                                                 <tag_name class="class_name2"> ... </tag_name>
+                                                                                 <tag_name2 class="class_name3"> ... </tag_name2>
+  
+html_nodes(".class.name.four") --> <tag_name2 class="class name four"> ... </tag_name2>
+  
+html_nodes("tag_name:nth-child(2)") --> <tag_name class="class_name2"> ... </tag_name>
+
+  
+```
