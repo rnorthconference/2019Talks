@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>Introduction to data.table</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kim Eng Ky" />
+    <meta name="date" content="2019-08-16" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Introduction to data.table
+### Kim Eng Ky
+### August 16, 2019
+
+---
+
+
+
+
+# What is `data.table`?
+
+"`data.table` is an R package that provides an enhanced version of `data.frames`." 
+
+- faster
+- memory efficient 
+- concise syntax
+- an excellent addition to your R venacular, particularly if you work with massive datasets.
+
+---
+
+# Install and load
+
+
+```r
+# install 
+install.packages("data.table")
+# load 
+library(data.table)
+```
+
+
+---
+
+
+# General form
+
+![](4b_intro_to_data_table_files/figure-html/unnamed-chunk-2-1.png)&lt;!-- --&gt;
+
+---
+
+A lot of `data.table` commands are similar to the usual R `data.frame`.
+
+
+```r
+# create a data.table
+DT &lt;- data.table(x = c(1, 2, 3), 
+                 y = c('a', 'b', 'c'))
+
+# turn airquality data.frame to 
+# a data.table object
+data("airquality")
+airquality_dt &lt;- as.data.table(airquality)
+
+# turn iris into a data.table 
+# instead of making a copy
+setDT(iris)
+```
+
+
+
+---
+
+When there are 100+ rows, `data.table` only prints the first five and the last five rows.
+
+
+```r
+airquality_dt
+```
+
+```
+##      Ozone Solar.R Wind Temp Month Day
+##   1:    41     190  7.4   67     5   1
+##   2:    36     118  8.0   72     5   2
+##   3:    12     149 12.6   74     5   3
+##   4:    18     313 11.5   62     5   4
+##   5:    NA      NA 14.3   56     5   5
+##  ---                                  
+## 149:    30     193  6.9   70     9  26
+## 150:    NA     145 13.2   77     9  27
+## 151:    14     191 14.3   75     9  28
+## 152:    18     131  8.0   76     9  29
+## 153:    20     223 11.5   68     9  30
+```
+
+
+---
+
+# Subset rows
+
+
+```r
+# data.frame
+airquality[1:3,]
+airquality[airquality$Month == 5,]
+airquality[airquality$Month == 5 &amp; 
+             airquality$Ozone &gt; 100,]
+
+# data.table
+airquality_dt[1:3]
+airquality_dt[Month == 5]
+airquality_dt[Month == 5 &amp; Ozone &gt; 100]
+```
+
+---
+
+# Subset columns
+
+
+```r
+# data.frame
+airquality[, c('Month', 'Day', 'Ozone')]
+
+# data.table
+airquality_dt[, .(Month, Day, Ozone)]
+```
+
+
+---
+
+# Manipulation on columns
+
+Calculate mean Ozone value:
+
+
+```r
+# data.frame
+mean(airquality$Ozone, na.rm = T)
+
+# data.table
+airquality_dt[, mean(Ozone, na.rm = T)]
+```
+
+---
+
+Calculate mean Ozone value by Month
+
+
+```r
+# data.frame 
+aggregate(Ozone ~ Month, airquality, 
+          mean, na.rm = T)
+
+# data.table
+airquality_dt[, mean(Ozone, na.rm = T), 
+              by = Month]
+```
+
+---
+
+Calculate mean Ozone value when Temp is above 70 by Month
+
+
+```r
+# data.frame 
+aggregate(Ozone ~ Month, 
+          airquality[airquality$Temp &gt; 70,], 
+          mean, na.rm = T)
+
+# data.table
+airquality_dt[Temp &gt; 70, 
+              mean(Ozone, na.rm = T), 
+              by = Month]
+```
+
+---
+
+With `data.table`, you can also use expressions within `by` statement.
+
+
+```r
+airquality_dt[, mean(Ozone, na.rm = T),
+              by = .(Temp &gt; 70)]
+```
+
+```
+##     Temp       V1
+## 1: FALSE 18.40741
+## 2:  TRUE 49.32584
+```
+
+---
+
+Names output columns to be more meaningful:
+
+
+```r
+airquality_dt[, .(
+  mean_ozone = mean(Ozone, na.rm = T)
+), by = .(temp_70_plus = Temp &gt; 70)]
+```
+
+```
+##    temp_70_plus mean_ozone
+## 1:        FALSE   18.40741
+## 2:         TRUE   49.32584
+```
+
+---
+
+In `data.table`, there are a few very useful shortcut commands. `.N` is a counting tool that holds the number of observations in the current group.
+
+
+```r
+# total number of rows
+airquality_dt[, .N]
+```
+
+```
+## [1] 153
+```
+
+
+---
+
+Or we can calculate number of rows by month:
+
+
+```r
+airquality_dt[, .N, Month]
+```
+
+```
+##    Month  N
+## 1:     5 31
+## 2:     6 30
+## 3:     7 31
+## 4:     8 31
+## 5:     9 30
+```
+
+---
+
+`uniqueN()` calculates number of unique values. 
+
+
+```r
+# number of different months in data
+airquality_dt[, uniqueN(Month)]
+```
+
+```
+## [1] 5
+```
+
+
+---
+
+Or we can calculate number of days in each month.
+
+
+```r
+airquality_dt[, uniqueN(Day), Month]
+```
+
+```
+##    Month V1
+## 1:     5 31
+## 2:     6 30
+## 3:     7 31
+## 4:     8 31
+## 5:     9 30
+```
+
+
+
+---
+
+`.GRP` command allows you to add unique id to groups as identified by `by` statement.
+
+
+```r
+# just one group
+airquality_dt[, .GRP]
+```
+
+```
+## [1] 1
+```
+
+```r
+# group id by month
+airquality_dt[, .GRP, Month]
+```
+
+```
+##    Month GRP
+## 1:     5   1
+## 2:     6   2
+## 3:     7   3
+## 4:     8   4
+## 5:     9   5
+```
+
+---
+
+Or a bit more complicated
+
+
+```r
+airquality_dt[, .GRP, .(
+  Month, 
+  temp_70_plus = Temp &gt; 70)]
+```
+
+```
+##    Month temp_70_plus GRP
+## 1:     5        FALSE   1
+## 2:     5         TRUE   2
+## 3:     6         TRUE   3
+## 4:     6        FALSE   4
+## 5:     7         TRUE   5
+## 6:     8         TRUE   6
+## 7:     9         TRUE   7
+## 8:     9        FALSE   8
+```
+
+
+
+--- 
+---
+
+And, `.I` holds the row numbers.
+
+
+```r
+airquality_dt[, .I]
+```
+
+```
+##   [1]   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17
+##  [18]  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34
+##  [35]  35  36  37  38  39  40  41  42  43  44  45  46  47  48  49  50  51
+##  [52]  52  53  54  55  56  57  58  59  60  61  62  63  64  65  66  67  68
+##  [69]  69  70  71  72  73  74  75  76  77  78  79  80  81  82  83  84  85
+##  [86]  86  87  88  89  90  91  92  93  94  95  96  97  98  99 100 101 102
+## [103] 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119
+## [120] 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136
+## [137] 137 138 139 140 141 142 143 144 145 146 147 148 149 150 151 152 153
+```
+
+
+---
+
+
+# Keys
+
+`data.table`s are ordered by its keys in increaing order. Keys used to be required for "keyed" joins. Now we can do "ad-hoc" joins using `on=` without having to do `setkey()` prior to joining.
+
+---
+
+# Left/Right Joins
+
+
+```r
+sunny_days &lt;- data.table(
+  Month = c(5, 6, 7, 8, 9),
+  sunny_days = c(20, 25, 28, 23, 15), 
+  key = 'Month'
+)
+# data.frame
+merge(airquality, sunny_days, 
+      by = 'Month', all.x = F, all.y = T)
+# keyed join
+setkey(airquality_dt, Month)
+airquality_dt[sunny_days]
+# ad-hoc join
+airquality_dt[sunny_days, on = .(Month)]
+```
+
+
+
+---
+
+We can also filter using joins. 
+
+
+```r
+(filter_vals &lt;- data.table(
+  Month = rep(c(5, 6), each  = 3),
+  Day = rep(c(1, 2, 3), 2)
+))
+```
+
+```
+##    Month Day
+## 1:     5   1
+## 2:     5   2
+## 3:     5   3
+## 4:     6   1
+## 5:     6   2
+## 6:     6   3
+```
+
+
+
+---
+
+
+
+Subset `airquality` based on values in `filter_vals`. 
+
+
+```r
+# only keep rows that match 
+# Month/Day pair in filter_vals
+airquality_dt[filter_vals, 
+              on = .(Month, Day)]
+# or 
+setkey(airquality_dt, Month, Day)
+setkey(filter_vals, Month, Day)
+airquality_dt[filter_vals]
+```
+
+---
+
+What if we want to exclude rows that match the Month/Day pair in `filter_vals`?
+
+
+```r
+airquality_dt[!filter_vals, 
+              on = .(Month, Day)]
+# or after setting keys:
+airquality_dt[!filter_vals]
+```
+
+
+---
+
+# Inner Joins
+
+
+```r
+# data.frame 
+merge(airquality, sunny_days, 
+      by = 'Month')
+
+# data.table
+airquality_dt[sunny_days, 
+              on = .(Month),
+              nomatch = 0]
+```
+
+---
+
+# Full Joins
+
+
+```r
+merge(airquality_dt, sunny_days, 
+      by = 'Month', all = T)
+```
+
+---
+
+# Defining Function `:=`
+
+You can define new variables in `data.table` with the `:=`.
+
+
+```r
+# create a new variable called high_temp
+airquality_dt[, high_temp := Temp &gt; 70]
+head(airquality_dt, 3)
+```
+
+```
+##    Ozone Solar.R Wind Temp Month Day high_temp
+## 1:    41     190  7.4   67     5   1     FALSE
+## 2:    36     118  8.0   72     5   2      TRUE
+## 3:    12     149 12.6   74     5   3      TRUE
+```
+
+---
+
+Or create a new variable to hold mean values of wind by month. 
+
+
+
+
+```r
+airquality_dt[, mean_wind := mean(Wind),
+              by = Month]
+head(airquality_dt, 3)
+```
+
+```
+##    Ozone Solar.R Wind Temp Month Day mean_wind
+## 1:    41     190  7.4   67     5   1  11.62258
+## 2:    36     118  8.0   72     5   2  11.62258
+## 3:    12     149 12.6   74     5   3  11.62258
+```
+
+---
+
+We can also create multiple variables in one go.
+
+
+```r
+airquality_dt[, `:=` (
+  high_temp = Temp &gt; 70, 
+  row_id = .I
+)]
+# or equivalently
+airquality_dt[
+  , c('high_temp', 'row_id') 
+      := list(Temp &gt; 70, .I)
+]
+```
+
+---
+
+One great benefit of `data.table` is the ability to sub-assign by reference.
+
+
+```r
+airquality_dt[high_temp == TRUE, 
+              new_wind := Wind]
+```
+
+---
+
+We can also use `:=` to remove columns.
+
+
+```r
+airquality_dt[, high_temp := NULL]
+# or multiple ones at a time
+airquality_dt[
+  , c('high_temp', 'mean_wind') := NULL
+]
+# or 
+cols &lt;- c('high_temp', 'mean_wind')
+airquality_dt[, (cols) := NULL]
+```
+
+---
+
+# `.SD` and `.SDcols`
+
+You can access columns of a `data.table` using `.SD` syntax.
+
+Select all columns in `airquality_dt`:
+
+
+
+
+```r
+head(airquality_dt[, .SD], 3)
+```
+
+```
+##    Ozone Solar.R Wind Temp Month Day
+## 1:    41     190  7.4   67     5   1
+## 2:    36     118  8.0   72     5   2
+## 3:    12     149 12.6   74     5   3
+```
+
+---
+
+Select subset of columns by specifying columns in `.SDcols`:
+
+
+```r
+head(airquality_dt[
+  , .SD, .SDcols = c('Month', 'Day')
+], 3)
+```
+
+```
+##    Month Day
+## 1:     5   1
+## 2:     5   2
+## 3:     5   3
+```
+
+---
+
+Or, use column indices.
+
+
+```r
+head(airquality_dt[
+  , .SD, .SDcols = c(5, 6)
+], 3)
+```
+
+```
+##    Month Day
+## 1:     5   1
+## 2:     5   2
+## 3:     5   3
+```
+
+---
+
+Round up `Ozone`, `Solar.R` and `Wind` variables. 
+
+
+```r
+airquality_dt[, lapply(.SD, round), 
+              .SDcols = c('Ozone', 'Solar.R', 'Wind')]
+```
+
+---
+
+We can overwrite them into the original variables.
+
+
+```r
+cols &lt;- c('Ozone', 'Solar.R', 'Wind')
+airquality_dt[, (cols) := lapply(.SD, round), 
+              .SDcols = cols]
+```
+
+--- 
+---
+
+Calculate mean by `Month`:
+
+
+```r
+airquality_dt[, lapply(.SD, mean, na.rm = T), 
+              .SDcols = 1:4, 
+              by = Month]
+```
+
+```
+##    Month    Ozone  Solar.R      Wind     Temp
+## 1:     5 23.61538 181.2963 11.622581 65.54839
+## 2:     6 29.44444 190.1667 10.266667 79.10000
+## 3:     7 59.11538 216.4839  8.941935 83.90323
+## 4:     8 59.96154 171.8571  8.793548 83.96774
+## 5:     9 31.44828 167.4333 10.180000 76.90000
+```
+
+---
+
+Select first and last rows:
+
+
+```r
+airquality_dt[, .SD[c(1, .N)]]
+```
+
+```
+##    Ozone Solar.R Wind Temp Month Day
+## 1:    41     190  7.4   67     5   1
+## 2:    20     223 11.5   68     9  30
+```
+
+---
+
+Select first and last rows for each month:
+
+
+```r
+airquality_dt[, .SD[c(1, .N)], 
+              by = Month]
+```
+
+```
+##     Month Ozone Solar.R Wind Temp Day
+##  1:     5    41     190  7.4   67   1
+##  2:     5    37     279  7.4   76  31
+##  3:     6    NA     286  8.6   78   1
+##  4:     6    NA     138  8.0   83  30
+##  5:     7   135     269  4.1   84   1
+##  6:     7    59     254  9.2   81  31
+##  7:     8    39      83  6.9   81   1
+##  8:     8    85     188  6.3   94  31
+##  9:     9    96     167  6.9   91   1
+## 10:     9    20     223 11.5   68  30
+```
+
+
+---
+
+# Chaining
+
+Chaining in `data.table` refers to using multiple `[]` in one command.
+
+Calculate mean `Temp` by `Month`, order by the calculated mean, and only keep rows with mean less than 70:
+
+
+```r
+airquality_dt[, .(
+  mean_temp = mean(Temp, na.rm = T)
+), by = Month][
+  order(mean_temp)
+][
+  mean_temp &lt; 70
+]
+```
+
+```
+##    Month mean_temp
+## 1:     5  65.54839
+```
+
+
+---
+
+# Rolling Joins
+
+Let’s **roll forward** (last observation carried forward):
+
+
+```r
+dt1 &lt;- data.table(
+  x = c("a", "b", "c", "d"), 
+  dt1_y = c(11.9, 21.4, 5.7, 18)
+)
+dt2 &lt;- data.table(
+  dt2_y = c(10, 15, 20), 
+  z = c("one", "two", "three")
+)
+# duplicate y  
+dt1[, `:=` (joint_y = dt1_y)]
+dt2[, `:=` (joint_y = dt2_y)]
+```
+
+---
+
+
+```r
+dt1
+```
+
+```
+##    x dt1_y joint_y
+## 1: a  11.9    11.9
+## 2: b  21.4    21.4
+## 3: c   5.7     5.7
+## 4: d  18.0    18.0
+```
+
+```r
+dt2
+```
+
+```
+##    dt2_y     z joint_y
+## 1:    10   one      10
+## 2:    15   two      15
+## 3:    20 three      20
+```
+
+---
+
+
+```r
+dt2[dt1, on = .(joint_y), roll = T] 
+```
+
+```
+##    dt2_y     z joint_y x dt1_y
+## 1:    10   one    11.9 a  11.9
+## 2:    20 three    21.4 b  21.4
+## 3:    NA  &lt;NA&gt;     5.7 c   5.7
+## 4:    15   two    18.0 d  18.0
+```
+
+```r
+# or: dt2[dt1, on = .(joint_y), roll = Inf]
+```
+
+This means that for each `dt1_y`, find `dt2_y` that is closest to `dt1_y` with the condition `dt1_y &gt;= dt2_y`. This condition is the forward part of the rolling join.
+
+---
+
+Now, let’s **roll backward** (next observation carried backward):
+
+
+```r
+dt2[dt1, on = .(joint_y), roll = -Inf]
+```
+
+```
+##    dt2_y     z joint_y x dt1_y
+## 1:    15   two    11.9 a  11.9
+## 2:    NA  &lt;NA&gt;    21.4 b  21.4
+## 3:    10   one     5.7 c   5.7
+## 4:    20 three    18.0 d  18.0
+```
+
+Now the condition is reverse, i.e. `dt1_y &lt;= dt2_y`. Pay attention to the minus sign in the `-Inf`; it is how you tell data.table to roll backward instead of forward.
+
+---
+
+Next, let’s give them a window to roll on:
+
+
+```r
+dt2[dt1, on = .(joint_y), roll = -2]
+```
+
+```
+##    dt2_y     z joint_y x dt1_y
+## 1:    NA  &lt;NA&gt;    11.9 a  11.9
+## 2:    NA  &lt;NA&gt;    21.4 b  21.4
+## 3:    NA  &lt;NA&gt;     5.7 c   5.7
+## 4:    20 three    18.0 d  18.0
+```
+
+Now the condition is restricted to only match if `dt1_y &lt;= dt2_y - 2`.
+
+---
+
+
+```r
+dt2[dt1, on = .(joint_y), roll = 2]
+```
+
+```
+##    dt2_y     z joint_y x dt1_y
+## 1:    10   one    11.9 a  11.9
+## 2:    20 three    21.4 b  21.4
+## 3:    NA  &lt;NA&gt;     5.7 c   5.7
+## 4:    NA  &lt;NA&gt;    18.0 d  18.0
+```
+
+The condition here is `dt1_y &lt;= dt2_y + 2`.
+
+---
+
+Or, we can roll both ways to the nearest value.
+
+
+```r
+dt2[dt1, on = .(joint_y), roll = "nearest"]
+```
+
+```
+##    dt2_y     z joint_y x dt1_y
+## 1:    10   one    11.9 a  11.9
+## 2:    20 three    21.4 b  21.4
+## 3:    10   one     5.7 c   5.7
+## 4:    20 three    18.0 d  18.0
+```
+
+---
+
+Another cool feature in `data.table` is the `foverlaps()` function which allows you to join tables based on range of values. 
+
+Each window does not have to be equal.
+
+
+```r
+dt3 &lt;- data.table(
+  min_y = c(0, 10, 15, 20), 
+  max_y = c(10, 15, 20, 30)
+)
+setkey(dt3, min_y, max_y)
+```
+
+---
+
+
+```r
+dt4 &lt;- data.table(
+  x = c('a', 'b', 'c', 'd'),
+  dt4_y = c(11.9, 21.4, 5.7, 18),
+  dt4_y_end = c(13, 25, 10, 22)
+)
+setkey(dt4, dt4_y, dt4_y_end)
+foverlaps(dt4, dt3, type = "any")
+```
+
+```
+##    min_y max_y x dt4_y dt4_y_end
+## 1:     0    10 c   5.7        10
+## 2:    10    15 c   5.7        10
+## 3:    10    15 a  11.9        13
+## 4:    15    20 d  18.0        22
+## 5:    20    30 d  18.0        22
+## 6:    20    30 b  21.4        25
+```
+
+When specifying `type = "any"`, as long as `[dt1_y, dt1_y_end]` and `[min_y, max_y]` ranges overlap it will give a match.
+
+---
+
+
+```r
+foverlaps(dt4, dt3, type = "within")
+```
+
+```
+##    min_y max_y x dt4_y dt4_y_end
+## 1:     0    10 c   5.7        10
+## 2:    10    15 a  11.9        13
+## 3:    NA    NA d  18.0        22
+## 4:    20    30 b  21.4        25
+```
+
+When specifying `type = "within"`, the only matches returned are those where `[dt1_y, dt1_y_end]` range is within `[min_y, max_y]`.
+
+---
+
+# References
+
+1. Matt Dowle and Arun Srinivasan (2018). `data.table`: Extension of `data.frame`. R
+  package version 1.11.4. https://CRAN.R-project.org/package=data.table
+2. https://github.com/Rdatatable/data.table/wiki
+3. `data.table` vs. `dplyr`. https://stackoverflow.com/questions/21435339/data-table-vs-dplyr-can-one-do-something-well-the-other-cant-or-does-poorly
+4. Advaned tips and tricks with `data.table`. http://brooksandrew.github.io/simpleblog/articles/advanced-data-table/
+
+---
+
+5. `data.table` cheat sheet. https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf
+6. Purpose of setting a key in `data.table`. https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table
+7. `.EACHI` in `data.table`. https://stackoverflow.com/questions/27004002/eachi-in-data-table/27004566#27004566
+8. Understand `data.table` rolling joins. https://www.r-bloggers.com/understanding-data-table-rolling-joins/
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
