@@ -1,0 +1,78 @@
+---
+title: "Brilliant Insights"
+author: "Matt Pettis"
+date: "`r Sys.time()`"
+output:
+    html_document:
+        theme: journal
+        highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# My Thesis
+
+I can tell the difference between any of the different iris species!
+
+
+
+# My Analysis
+
+## What does my dataset look like?
+
+```{r}
+print(here::here())
+print(iris)
+```
+
+Oooh too much data to understand all at once.  Let's take the means of all of
+the dimensions for each type of iris:
+
+```{r}
+df_iris <- dplyr::group_by(iris, Species)
+df_iris_summary <- dplyr::summarise_all(df_iris, mean)
+
+# Display table nicely
+knitr::kable(df_iris_summary)
+```
+
+> Wow!  It looks like setosa has different Petal dimensions!
+> Well, at least according to the mean values.  Wouldn't it be nice if we could
+just see the points and see if anything pops?
+
+
+
+
+
+# We can see the points!  Here we plot it!
+
+```{r}
+ggplot2::ggplot(iris) +
+    ggplot2::geom_point(ggplot2::aes(Petal.Width, Petal.Length, color=Species)) +
+    ggplot2::ggtitle("Holy Smokes Would You Look at This!")
+```
+
+Good grief!  Not only did the setosas look really different, but it looks like:
+
+- you can distinguish between the versicolors and virginicas too!
+- We should look at some pictures and see if this makes sense:
+
+
+
+# Pictures of these irises
+
+Setosa:
+
+![setosa](`r file.path(here::here(), "img", "setosa.jpg")`)
+
+Versicolor:
+
+![versicolor](`r file.path(here::here(), "img", "versicolor.jpg")`)
+
+Virginica:
+
+![virginica](`r file.path(here::here(), "img", "virginica.jpg")`)
+
+> It's... obvious?

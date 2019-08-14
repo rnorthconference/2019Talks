@@ -1,0 +1,19 @@
+---
+title: "Markdown Examples"
+author: "Matt Pettis"
+date: "`r Sys.time()`"
+output: html_document
+---
+
+# Header!
+
+## Subheader!
+
+- Bulleted
+- lists
+- are
+- nice!
+
+[A link](https://youtube.com)
+
+![An image with this alt-text](C:/Users/IRINZN/Documents/personal/r-north-2019-08/img/rmd-shot1.JPG)
