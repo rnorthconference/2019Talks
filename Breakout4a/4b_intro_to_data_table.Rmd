@@ -1,0 +1,660 @@
+---
+title: "Introduction to data.table"
+author: "Kim Eng Ky <br/> @kykimeng <br/> kim_ky[at]uhc[dot]com <br/> kykimeng.com/slides/rnorth_data_table.html"
+date: "August 16, 2019"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: xaringan-themer.css
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r xaringan-themer, include = FALSE}
+library(xaringanthemer)
+mono_light(
+  base_color = "#000099",
+  header_font_google = google_font("Josefin Sans"),
+  text_font_google   = google_font("Montserrat", "500", "500i"),
+  code_font_google   = google_font("Droid Mono"),
+  text_font_size = '24px',
+  code_highlight_color = "#FFFFFF"
+)
+```
+
+# What is `data.table`?
+
+"`data.table` is an R package that provides an enhanced version of `data.frames`." 
+
+- faster
+- memory efficient 
+- concise syntax
+- an excellent addition to your R venacular, particularly if you work with massive datasets.
+
+---
+
+# Install and load
+
+```{r, eval=F}
+# install 
+install.packages("data.table")
+# load 
+library(data.table)
+```
+
+
+---
+
+
+# General form
+
+```{r,echo=F, fig.width=10, fig.height=5}
+library(data.table)
+library(ggplot2)
+ggplot() + 
+  geom_text(aes(x = 0, y = 0, label = "DT[i, j, by]"), size = 16) +
+  theme_classic() +
+  theme(axis.line = element_blank(), axis.title = element_blank(), 
+        axis.text = element_blank(), axis.ticks = element_blank()) +
+  geom_line(aes(x = c(-2, -.3), y = c(-2, -0.25)), arrow = arrow(), size = 1) +
+  geom_line(aes(x = c(0.15, 0.15), y = c(-2, -0.25)), arrow = arrow(), size = 1) +
+  geom_line(aes(x = c(.9, 2), y = c(-.25, -2)), arrow = arrow(ends = "first"), size = 1) +
+  geom_label(aes(x = c(-2.5, 0.15, 3), y = -2, label = c("WHERE\n(on which rows)", "SELECT\n(do what)", "GROUP BY\n(group by what)")), size = 10) +
+  scale_x_continuous(limits = c(-4, 5)) +
+  scale_y_continuous(limits = c(-2.2, .5))
+```
+
+---
+
+A lot of `data.table` commands are similar to the usual R `data.frame`.
+
+```{r, eval=F}
+# create a data.table
+DT <- data.table(x = c(1, 2, 3), 
+                 y = c('a', 'b', 'c'))
+
+# turn airquality data.frame to 
+# a data.table object
+data("airquality")
+airquality_dt <- as.data.table(airquality)
+
+# turn iris into a data.table 
+# instead of making a copy
+setDT(iris)
+```
+
+```{r, include=F}
+data("airquality")
+airquality_dt <- as.data.table(airquality)
+```
+
+---
+
+When there are 100+ rows, `data.table` only prints the first five and the last five rows.
+
+```{r}
+airquality_dt
+```
+
+
+---
+
+# Subset rows
+
+```{r, eval=F}
+# data.frame
+airquality[1:3,]
+airquality[airquality$Month == 5,]
+airquality[airquality$Month == 5 & 
+             airquality$Ozone > 100,]
+
+# data.table
+airquality_dt[1:3]
+airquality_dt[Month == 5]
+airquality_dt[Month == 5 & Ozone > 100]
+```
+
+---
+
+# Subset columns
+
+```{r, eval=F}
+# data.frame
+airquality[, c('Month', 'Day', 'Ozone')]
+
+# data.table
+airquality_dt[, .(Month, Day, Ozone)]
+```
+
+
+---
+
+# Manipulation on columns
+
+Calculate mean Ozone value:
+
+```{r}
+# data.frame
+mean(airquality$Ozone, na.rm = T)
+
+# data.table
+airquality_dt[, mean(Ozone, na.rm = T)]
+```
+
+---
+
+Calculate mean Ozone value by Month
+
+```{r, eval=F}
+# data.frame 
+aggregate(Ozone ~ Month, airquality, 
+          mean, na.rm = T)
+```
+
+```{r}
+# data.table
+airquality_dt[, mean(Ozone, na.rm = T), 
+              by = Month]
+```
+
+---
+
+Calculate mean Ozone value when Temp is above 70 by Month
+
+```{r, eval=F}
+# data.frame 
+aggregate(Ozone ~ Month, 
+          airquality[airquality$Temp > 70,], 
+          mean, na.rm = T)
+```
+
+```{r}
+# data.table
+airquality_dt[Temp > 70, 
+              mean(Ozone, na.rm = T), 
+              by = Month]
+```
+
+---
+
+With `data.table`, you can also use expressions within `by` statement.
+
+```{r}
+airquality_dt[, mean(Ozone, na.rm = T),
+              by = .(Temp > 70)]
+```
+
+Names output columns to be more meaningful:
+
+```{r}
+airquality_dt[, .(
+  mean_ozone = mean(Ozone, na.rm = T)
+), by = .(temp_70_plus = Temp > 70)]
+```
+
+---
+
+In `data.table`, there are a few very useful shortcut commands. `.N` is a counting tool that holds the number of observations in the current group.
+
+```{r}
+# total number of rows
+airquality_dt[, .N]
+```
+
+Or we can calculate number of rows by month:
+
+```{r}
+airquality_dt[, .N, Month]
+```
+
+---
+
+`uniqueN()` calculates number of unique values. 
+
+```{r}
+# number of different months in data
+airquality_dt[, uniqueN(Month)]
+```
+
+Or we can calculate number of days in each month.
+
+```{r}
+airquality_dt[, uniqueN(Day), Month]
+```
+
+
+
+---
+
+`.GRP` command allows you to add unique id to groups as identified by `by` statement.
+
+```{r}
+# just one group
+airquality_dt[, .GRP]
+
+# group id by month
+airquality_dt[, .GRP, Month]
+```
+
+---
+
+Or a bit more complicated
+
+```{r}
+airquality_dt[, .GRP, .(
+  Month, 
+  temp_70_plus = Temp > 70)]
+```
+
+
+
+--- 
+---
+
+And, `.I` holds the row numbers.
+
+```{r}
+airquality_dt[, .I]
+```
+
+
+---
+
+
+# Keys
+
+`data.table`s are ordered by its keys in increaing order. Keys used to be required for "keyed" joins. Now we can do "ad-hoc" joins using `on=` without having to do `setkey()` prior to joining.
+
+---
+
+# Left/Right Joins
+
+```{r, eval=F}
+sunny_days <- data.table(
+  Month = c(5, 6, 7, 8, 9),
+  sunny_days = c(20, 25, 28, 23, 15), 
+  key = 'Month'
+)
+# data.frame
+merge(airquality, sunny_days, 
+      by = 'Month', all.x = F, all.y = T)
+# keyed join
+setkey(airquality_dt, Month)
+airquality_dt[sunny_days]
+# ad-hoc join
+airquality_dt[sunny_days, on = .(Month)]
+```
+
+
+
+---
+
+We can also filter using joins. 
+
+```{r}
+(filter_vals <- data.table(
+  Month = rep(c(5, 6), each  = 3),
+  Day = rep(c(1, 2, 3), 2)
+))
+```
+
+
+
+---
+
+
+
+Subset `airquality` based on values in `filter_vals`. 
+
+```{r, eval=F}
+# only keep rows that match 
+# Month/Day pair in filter_vals
+airquality_dt[filter_vals, 
+              on = .(Month, Day)]
+```
+
+```{r}
+# or 
+setkey(airquality_dt, Month, Day)
+setkey(filter_vals, Month, Day)
+airquality_dt[filter_vals]
+```
+
+---
+
+What if we want to exclude rows that match the Month/Day pair in `filter_vals`?
+
+```{r, eval=F}
+airquality_dt[!filter_vals, 
+              on = .(Month, Day)]
+```
+
+```{r}
+# or after setting keys:
+airquality_dt[!filter_vals]
+```
+
+
+---
+
+# Inner Joins
+
+```{r, eval=F}
+# data.frame 
+merge(airquality, sunny_days, 
+      by = 'Month')
+
+# data.table
+airquality_dt[sunny_days, 
+              on = .(Month),
+              nomatch = 0]
+```
+
+---
+
+# Full Joins
+
+```{r, eval=F}
+merge(airquality_dt, sunny_days, 
+      by = 'Month', all = T)
+```
+
+---
+
+# Defining Function `:=`
+
+You can define new variables in `data.table` with the `:=`.
+
+```{r}
+# create a new variable called high_temp
+airquality_dt[, high_temp := Temp > 70]
+head(airquality_dt, 3)
+```
+
+---
+
+Or create a new variable to hold mean values of wind by month. 
+
+```{r, include=F}
+airquality_dt[, high_temp := NULL]
+```
+
+```{r}
+airquality_dt[, mean_wind := mean(Wind),
+              by = Month]
+head(airquality_dt, 3)
+```
+
+---
+
+We can also create multiple variables in one go.
+
+```{r, eval=F}
+airquality_dt[, `:=` (
+  high_temp = Temp > 70, 
+  row_id = .I
+)]
+# or equivalently
+airquality_dt[
+  , c('high_temp', 'row_id') 
+      := list(Temp > 70, .I)
+]
+```
+
+---
+
+One great benefit of `data.table` is the ability to sub-assign by reference.
+
+```{r, eval=F}
+airquality_dt[high_temp == TRUE, 
+              new_wind := Wind]
+```
+
+---
+
+We can also use `:=` to remove columns.
+
+```{r, eval=F}
+airquality_dt[, high_temp := NULL]
+# or multiple ones at a time
+airquality_dt[
+  , c('high_temp', 'mean_wind') := NULL
+]
+# or 
+cols <- c('high_temp', 'mean_wind')
+airquality_dt[, (cols) := NULL]
+```
+
+---
+
+# `.SD` and `.SDcols`
+
+You can access columns of a `data.table` using `.SD` syntax.
+
+Select all columns in `airquality_dt`:
+
+```{r, include=F}
+airquality_dt[, c('mean_wind', 'row_id', 'high_temp') := NULL]
+```
+
+```{r}
+head(airquality_dt[, .SD], 3)
+```
+
+---
+
+Select subset of columns by specifying columns in `.SDcols`:
+
+```{r}
+head(airquality_dt[
+  , .SD, .SDcols = c('Month', 'Day')
+], 3)
+# Or, use column indices.
+head(airquality_dt[
+  , .SD, .SDcols = c(5, 6)
+], 3)
+```
+
+---
+
+Round up `Ozone`, `Solar.R` and `Wind` variables. 
+
+```{r, eval=F}
+airquality_dt[, lapply(.SD, round), 
+              .SDcols = c('Ozone', 'Solar.R', 'Wind')]
+```
+
+We can overwrite them into the original variables.
+
+```{r, eval=F}
+cols <- c('Ozone', 'Solar.R', 'Wind')
+airquality_dt[, (cols) := lapply(.SD, round), 
+              .SDcols = cols]
+```
+
+--- 
+---
+
+Calculate mean by `Month`:
+
+```{r}
+airquality_dt[, lapply(.SD, mean, na.rm = T), 
+              .SDcols = 1:4, 
+              by = Month]
+```
+
+---
+
+Select first and last rows:
+
+```{r}
+airquality_dt[, .SD[c(1, .N)]]
+```
+
+---
+
+Select first and last rows for each month:
+
+```{r}
+airquality_dt[, .SD[c(1, .N)], 
+              by = Month]
+```
+
+
+---
+
+# Chaining
+
+Chaining in `data.table` refers to using multiple `[]` in one command.
+
+Calculate mean `Temp` by `Month`, order by the calculated mean, and only keep rows with mean less than 70:
+
+```{r}
+airquality_dt[, .(
+  mean_temp = mean(Temp, na.rm = T)
+), by = Month][
+  order(mean_temp)
+][
+  mean_temp < 70
+]
+```
+
+
+---
+
+# Rolling Joins
+
+Let’s **roll forward** (last observation carried forward):
+
+```{r}
+dt1 <- data.table(
+  x = c("a", "b", "c", "d"), 
+  dt1_y = c(11.9, 21.4, 5.7, 18)
+)
+dt2 <- data.table(
+  dt2_y = c(10, 15, 20), 
+  z = c("one", "two", "three")
+)
+# duplicate y  
+dt1[, `:=` (joint_y = dt1_y)]
+dt2[, `:=` (joint_y = dt2_y)]
+```
+
+---
+
+```{r}
+dt1
+dt2
+```
+
+---
+
+```{r}
+dt2[dt1, on = .(joint_y), roll = T] 
+# or: dt2[dt1, on = .(joint_y), roll = Inf]
+```
+
+This means that for each `dt1_y`, find `dt2_y` that is closest to `dt1_y` with the condition `dt1_y >= dt2_y`. This condition is the forward part of the rolling join.
+
+---
+
+Now, let’s **roll backward** (next observation carried backward):
+
+```{r}
+dt2[dt1, on = .(joint_y), roll = -Inf]
+```
+
+Now the condition is reverse, i.e. `dt1_y <= dt2_y`. Pay attention to the minus sign in the `-Inf`; it is how you tell data.table to roll backward instead of forward.
+
+---
+
+Next, let’s give them a window to roll on:
+
+```{r}
+dt2[dt1, on = .(joint_y), roll = -2]
+```
+
+Now the condition is restricted to only match if `dt1_y <= dt2_y - 2`.
+
+---
+
+Or, we can roll with window in the other direction.
+
+```{r}
+dt2[dt1, on = .(joint_y), roll = 2]
+```
+
+The condition here is `dt1_y <= dt2_y + 2`.
+
+---
+
+Or, we can roll both ways to the nearest value.
+
+```{r}
+dt2[dt1, on = .(joint_y), roll = "nearest"]
+```
+
+---
+
+Another cool feature in `data.table` is the `foverlaps()` function which allows you to join tables based on range of values. 
+
+Each window does not have to be equal.
+
+```{r}
+(dt3 <- data.table(
+  min_y = c(0, 10, 15, 20), 
+  max_y = c(10, 15, 20, 30),
+  key = c('min_y', 'max_y')
+))
+```
+
+---
+
+```{r}
+(dt4 <- data.table(
+  x = c('a', 'b', 'c', 'd'),
+  dt4_y = c(11.9, 21.4, 5.7, 18),
+  dt4_y_end = c(13, 25, 10, 22), 
+  key = c('dt4_y', 'dt4_y_end')
+))
+```
+
+
+---
+
+```{r}
+foverlaps(dt4, dt3, type = "any")
+```
+
+When specifying `type = "any"`, as long as `[dt4_y, dt4_y_end]` and `[min_y, max_y]` ranges overlap it will give a match.
+
+---
+
+```{r}
+foverlaps(dt4, dt3, type = "within")
+```
+
+When specifying `type = "within"`, the only matches returned are those where `[dt1_y, dt1_y_end]` range is within `[min_y, max_y]`.
+
+---
+
+# References
+
+1. Matt Dowle and Arun Srinivasan (2018). `data.table`: Extension of `data.frame`. R
+  package version 1.11.4. https://CRAN.R-project.org/package=data.table
+2. https://github.com/Rdatatable/data.table/wiki
+3. `data.table` vs. `dplyr`. https://stackoverflow.com/questions/21435339/data-table-vs-dplyr-can-one-do-something-well-the-other-cant-or-does-poorly
+4. Advaned tips and tricks with `data.table`. http://brooksandrew.github.io/simpleblog/articles/advanced-data-table/
+
+---
+
+# More references
+
+5. `data.table` cheat sheet. https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf
+6. Purpose of setting a key in `data.table`. https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table
+7. `.EACHI` in `data.table`. https://stackoverflow.com/questions/27004002/eachi-in-data-table/27004566#27004566
+8. Understand `data.table` rolling joins. https://www.r-bloggers.com/understanding-data-table-rolling-joins/
