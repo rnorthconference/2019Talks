@@ -21,7 +21,7 @@ mono_light(
   header_font_google = google_font("Josefin Sans"),
   text_font_google   = google_font("Montserrat", "500", "500i"),
   code_font_google   = google_font("Droid Mono"),
-  text_font_size = '30px',
+  text_font_size = '24px',
   code_highlight_color = "#FFFFFF"
 )
 ```
@@ -137,7 +137,7 @@ airquality_dt[, .(Month, Day, Ozone)]
 
 Calculate mean Ozone value:
 
-```{r, eval=F}
+```{r}
 # data.frame
 mean(airquality$Ozone, na.rm = T)
 
@@ -153,7 +153,9 @@ Calculate mean Ozone value by Month
 # data.frame 
 aggregate(Ozone ~ Month, airquality, 
           mean, na.rm = T)
+```
 
+```{r}
 # data.table
 airquality_dt[, mean(Ozone, na.rm = T), 
               by = Month]
@@ -168,7 +170,9 @@ Calculate mean Ozone value when Temp is above 70 by Month
 aggregate(Ozone ~ Month, 
           airquality[airquality$Temp > 70,], 
           mean, na.rm = T)
+```
 
+```{r}
 # data.table
 airquality_dt[Temp > 70, 
               mean(Ozone, na.rm = T), 
@@ -183,8 +187,6 @@ With `data.table`, you can also use expressions within `by` statement.
 airquality_dt[, mean(Ozone, na.rm = T),
               by = .(Temp > 70)]
 ```
-
----
 
 Names output columns to be more meaningful:
 
@@ -203,9 +205,6 @@ In `data.table`, there are a few very useful shortcut commands. `.N` is a counti
 airquality_dt[, .N]
 ```
 
-
----
-
 Or we can calculate number of rows by month:
 
 ```{r}
@@ -220,9 +219,6 @@ airquality_dt[, .N, Month]
 # number of different months in data
 airquality_dt[, uniqueN(Month)]
 ```
-
-
----
 
 Or we can calculate number of days in each month.
 
@@ -319,6 +315,9 @@ Subset `airquality` based on values in `filter_vals`.
 # Month/Day pair in filter_vals
 airquality_dt[filter_vals, 
               on = .(Month, Day)]
+```
+
+```{r}
 # or 
 setkey(airquality_dt, Month, Day)
 setkey(filter_vals, Month, Day)
@@ -332,6 +331,9 @@ What if we want to exclude rows that match the Month/Day pair in `filter_vals`?
 ```{r, eval=F}
 airquality_dt[!filter_vals, 
               on = .(Month, Day)]
+```
+
+```{r}
 # or after setting keys:
 airquality_dt[!filter_vals]
 ```
@@ -451,13 +453,7 @@ Select subset of columns by specifying columns in `.SDcols`:
 head(airquality_dt[
   , .SD, .SDcols = c('Month', 'Day')
 ], 3)
-```
-
----
-
-Or, use column indices.
-
-```{r}
+# Or, use column indices.
 head(airquality_dt[
   , .SD, .SDcols = c(5, 6)
 ], 3)
@@ -471,8 +467,6 @@ Round up `Ozone`, `Solar.R` and `Wind` variables.
 airquality_dt[, lapply(.SD, round), 
               .SDcols = c('Ozone', 'Solar.R', 'Wind')]
 ```
-
----
 
 We can overwrite them into the original variables.
 
@@ -588,6 +582,8 @@ Now the condition is restricted to only match if `dt1_y <= dt2_y - 2`.
 
 ---
 
+Or, we can roll with window in the other direction.
+
 ```{r}
 dt2[dt1, on = .(joint_y), roll = 2]
 ```
@@ -609,26 +605,32 @@ Another cool feature in `data.table` is the `foverlaps()` function which allows 
 Each window does not have to be equal.
 
 ```{r}
-dt3 <- data.table(
+(dt3 <- data.table(
   min_y = c(0, 10, 15, 20), 
-  max_y = c(10, 15, 20, 30)
-)
-setkey(dt3, min_y, max_y)
+  max_y = c(10, 15, 20, 30),
+  key = c('min_y', 'max_y')
+))
 ```
 
 ---
 
 ```{r}
-dt4 <- data.table(
+(dt4 <- data.table(
   x = c('a', 'b', 'c', 'd'),
   dt4_y = c(11.9, 21.4, 5.7, 18),
-  dt4_y_end = c(13, 25, 10, 22)
-)
-setkey(dt4, dt4_y, dt4_y_end)
+  dt4_y_end = c(13, 25, 10, 22), 
+  key = c('dt4_y', 'dt4_y_end')
+))
+```
+
+
+---
+
+```{r}
 foverlaps(dt4, dt3, type = "any")
 ```
 
-When specifying `type = "any"`, as long as `[dt1_y, dt1_y_end]` and `[min_y, max_y]` ranges overlap it will give a match.
+When specifying `type = "any"`, as long as `[dt4_y, dt4_y_end]` and `[min_y, max_y]` ranges overlap it will give a match.
 
 ---
 
