@@ -1,0 +1,619 @@
+% use 'handout' to produce handouts
+%\documentclass[handout]{beamer}
+\documentclass{beamer}
+\usepackage{graphicx}
+\newcommand{\vn}[1]{\mbox{{\it #1}}}
+\newcommand{\vb}{\vspace{\baselineskip}}
+\newcommand{\vh}{\vspace{.5\baselineskip}}
+\newcommand{\vf}{\vspace{\fill}}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\newcommand\Fontvi{\fontsize{9}{7.2}\selectfont}
+
+
+\newcommand{\mypause}{}
+
+\usetheme{Frankfurt}
+%
+%\definecolor{maroon}{rgb}{.6902,.1882,.3765}
+%\definecolor{sienna}{rgb}{.53,.31,.16}
+%\definecolor{gold}{rgb}{1,.84314,.0000}
+%\setbeamercolor{frametitle}{fg=maroon,bg=gold}
+%\usecolortheme[named=maroon]{structure}
+
+\title{An Introduction to Bayesian Statistics (Part II)}
+\author{Christina Knudson, Ph.D.}
+\institute{noRth}
+\vspace{-1cm}
+\titlegraphic{\includegraphics[width=2cm]{noRthlogo.png} \hspace{.5cm} \includegraphics[width=3cm]{simpleUSTlogo.png} \hspace{.5cm}  \includegraphics[width=2cm]{Rladieslogo.png}}
+
+
+\date{August 16,  2019}
+
+\begin{document}
+
+
+\frame{\titlepage} 
+
+
+
+\begin{frame}
+\frametitle{Recall from Part I of Intro to Bayes}
+
+
+\begin{itemize}
+\item Nuts and bolts: 
+\begin{itemize}
+\item Prior represents information known about parameters before the study
+\item Likelihood represents the data collected
+\item Posterior (distribution of parameters given the data) combines the prior and the likelihood
+\end{itemize} \pause
+\item Bayesian inference primarily focuses on the posterior \\ {\small (e.g. posterior mean, median, variance)} \pause
+\item ``Conjugate'' priors are convenient  because they combine with the likelihood to produce a well-known posterior \\
+{\small (e.g.  normal prior \& normal likelihood $\longrightarrow$ normal posterior) }
+
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{ Bayesian Overview  }
+%What do we do without a conjugate prior? \\
+%
+%\vspace{.5cm}
+%
+%Posterior probably won't be a recognizable distribution, so you will need to work a little harder to conduct inference. \\
+%
+%\vspace{.5cm}
+
+
+
+\begin{block}{Basic Bayesian Steps}
+
+\begin{enumerate}
+\item Select a model and specify prior distributions
+\item Approximate the posterior via Markov chain Monte Carlo
+\item Check the posterior approximation (e.g. sufficient samples)
+\item Use the MCMC samples to conduct inference 
+ \end{enumerate}
+\end{block}
+
+\vspace{.5cm}
+
+Either code it yourself or use one of the MANY packages on CRAN.
+
+\end{frame}
+
+
+\begin{frame}
+ \frametitle{ Approximate the Posterior  via  MCMC     }
+
+Approximate the posterior by using Markov chain Monte Carlo (MCMC) to sample from the posterior distribution.\\
+
+\pause
+
+\vspace{.5cm}
+
+How does  MCMC sampling generally work?
+
+
+\begin{enumerate}
+
+\item Select a starting value  for each parameter
+\item Iterate between the following two steps:
+\begin{enumerate}
+\item Propose new  values based on the current parameter values
+\item Move to the proposed values with some probability, or stay at the current position with the complementary probability
+\end{enumerate}
+
+\end{enumerate}
+
+The exact method of selecting proposed values and calculating the probability of moving depends on the exact MCMC sampler. \\
+
+\end{frame}
+
+%
+%
+%\begin{frame}
+%\frametitle{ Stepping Away From Conjugate Priors:  MCMC       }
+%
+%Potentially cut this slide to save time
+%
+%At each step, a sampler can update
+%\begin{itemize}
+%\item A single parameter \\
+%\hspace{.5cm} {\small e.g. Gibbs, variable-at-a-time Metropolis-Hastings}
+%\item All the parameters \\
+%\hspace{.5cm}  {\small e.g. random walk Metropolis-Hastings} 
+%\item Some of the parameters \\
+%\hspace{.5cm}   {\small  e.g. 2 of the 3 parameters}
+%\end{itemize}
+%
+%\end{frame}
+%
+
+
+\begin{frame}
+ \frametitle{ Approximate the Posterior  via  MCMC     }
+
+
+
+Some packages (such as \texttt{MCMCpack}) contain functions to perform \textbf{specific methods of Bayesian
+        inference}. \\
+
+\vspace{.3cm}
+
+{\small \texttt{MCMCpack} does MCMC in the context of specific         statistical models.}
+
+\vspace{1.3cm}
+
+Some packages (such as \texttt{mcmc}) focus on the MCMC (independent of the model/context) and are therefore \textbf{more general}. \\
+
+\vspace{.3cm}
+
+{\small \texttt{mcmc} simulates using a user-inputted log unnormalized posterior density.}
+
+
+\end{frame}
+
+
+
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Create Model with \texttt{MCMCpack}    }
+To fit a Bayesian linear model with \texttt{MCMCpack}, use \texttt{MCMCregress}.\\
+
+\vspace{.5cm}
+
+Creates a single chain using a Gibbs sampler with priors of:
+\begin{itemize}
+\item multivariate normal for regression coefficients
+\item inverse gamma for the variance of the residuals
+\end{itemize} 
+
+\vspace{.5cm}
+
+
+\begin{verbatim}
+> library(MCMCpack)
+> bikemod <- MCMCregress(riders_registered ~ temp_feel, 
++              data = bikes)
+>
+> bikemod2 <- MCMCregress(riders_registered ~ 
++              temp_feel + humidity, data = bikes)
+
+ \end{verbatim}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Create Model with \texttt{MCMCpack}    }
+%To fit a Bayesian linear model with \texttt{MCMCpack}, use \texttt{MCMCregress}.
+
+\begin{verbatim}
+> library(MCMCpack)
+> bikemod <- MCMCregress(riders_registered ~ temp_feel, 
++                        data = bikes)
+ \end{verbatim}
+\vspace{-.3cm}
+Some \texttt{MCMCregress} defaults:
+\begin{itemize}
+\item \texttt{mcmc = 10000}: Monte Carlo sample size (after burnin)
+\item \texttt{burnin = 1000}: discard first 1000 samples
+\item \texttt{thin = 1}: no thinning; retain all the samples  
+\item \texttt{beta.start = NA}: uses OLS estimates for initial values
+\item \texttt{b0 = 0}: prior mean of 0 for the regression coefficients
+\item \texttt{B0 = 0}: precision of 0 (infinite variance) for the prior 
+\end{itemize}
+\end{frame}
+
+
+
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Plot Approximation with \texttt{MCMCpack}    }
+\begin{verbatim}
+> plot(bikemod)
+\end{verbatim}
+\includegraphics[width=4in]{biketrace.png}
+
+
+\end{frame}
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Assess Approximation with \texttt{stableGR}    }
+\begin{verbatim}
+> library(stableGR)
+> stable.GR(bikemod)
+$`psrf`
+[1] 1.000008 1.000011 1.000006
+
+$mpsrf
+[1] 1.000006
+
+$means
+  (Intercept)     temp_feel        sigma2 
+   -667.55493      57.88718 1720954.96124 
+
+$n.eff
+[1] 8947.84
+\end{verbatim}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Assess Approximation with \texttt{stableGR}    }
+Did the sampler run long enough? Gelman-Rubin (1992): 
+
+
+ \begin{align*} 
+\text{psrf} = \sqrt{\dfrac{\text{chain length} -1}{\text{chain length}} + \dfrac{\text{between-chain variance}}{\text{within-chain variance}}} 
+\end{align*}
+\texttt{psrf} decreases to 1 as chain length increases. \pause
+
+\begin{verbatim}
+> stable.GR(bikemod)$psrf
+[1] 1.000008 1.000011 1.000006
+\end{verbatim}
+
+\vfill
+
+{\small Thanks to batch means variance estimation, \texttt{psrf} can be calculated whether we have one chain or multiple chains! }
+\end{frame}
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Assess Approximation with \texttt{stableGR}    }
+In a multivariate setting, it's better to check the multivariate psrf. \\
+\begin{itemize}
+\item[]  Assesses joint convergence rather than component-wise.
+\item[] Like \texttt{psrf}, \texttt{mpsrf} decreases to 1 as chain length increases. 
+\end{itemize}
+
+\begin{verbatim}
+> stable.GR(bikemod)$mpsrf
+[1] 1.000006
+\end{verbatim}
+
+\vspace{.3cm}
+
+\pause
+
+Is this low enough? Use \texttt{target.psrf} from \texttt{stableGR}.
+\begin{verbatim}
+> target.psrf(p=3, m=1)
+$`psrf`
+[1] 1.000062
+\end{verbatim}
+
+\vfill 
+
+{\small Previously, the recommended threshold for (m)psrf was 1.1. We now know that this almost always results in premature termination of the MCMC sampler.   }
+
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Assess Approximation with \texttt{stableGR}    }
+
+Equivalently, \texttt{n.eff} from \texttt{stableGR} checks whether sampler ran long enough.
+
+\begin{columns}
+\begin{column}{0.3\textwidth}
+
+\begin{verbatim}
+> n.eff(bikemod)
+$`n.eff`
+[1] 8947.84
+
+$converged
+[1] TRUE
+
+$n.target
+NULL
+\end{verbatim}
+
+\end{column}
+\begin{column}{0.6\textwidth} 
+\vspace{.3cm}
+
+{\small Effective sample size: number of uncorrelated samples that produce the same precision as the MCMC sample. \\
+
+\vspace{1cm}
+
+Did our sample achieve the target psrf?\\
+
+\vspace{.8cm}
+
+If not, \texttt{n.target} approximates target Monte Carlo sample size to hit the target psrf.}
+
+\end{column}
+\end{columns}
+
+
+\end{frame}
+
+
+
+
+
+
+
+
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Assess Approximation with \texttt{mcmcse}    }
+Get basic model info (estimates and Monte Carlo standard errors):
+\begin{verbatim}
+> library(mcmcse)
+> mcse.mat(bikemod)
+                      est           se
+(Intercept)    -667.55493   2.57855798
+temp_feel        57.88718   0.03525018
+sigma2      1720954.96124 999.41040863
+\end{verbatim}
+As the chain length increases, the Monte Carlo standard error decreases.
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Multivariate Analysis with \texttt{mcmcse}    }
+Inspect the covariance between the parameters: 
+\begin{verbatim}
+> mcse.multi(bikemod)
+$`cov`
+             [,1]         [,2]          [,3]
+[1,]   65872.4975   -874.52630    4282471.32
+[2,]    -874.5263     12.04724     -71047.43
+[3,] 4282471.3190 -71047.42549 9311035810.16
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Multivariate Analysis with \texttt{mcmcse}    }
+Plot joint confidence regions for a pair of parameters:
+\begin{verbatim}
+> plot(confRegion(mcse.multi(bikemod)),
++      xlab = "intercept", ylab = "slope") 
+\end{verbatim}
+
+\includegraphics[width=3in]{confregion.png}
+\end{frame}
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Quantiles and Credible Intervals    }
+Calculate quantiles and credible intervals using \texttt{quantile}:
+\begin{verbatim}
+> quantile(bikemod[,2], c(.025, .975))
+    2.5%    97.5% 
+51.39411 64.37282 
+\end{verbatim}
+ 
+\pause
+\vspace{.3cm}
+
+Or find the shortest (highest posterior density) credible intervals:
+\begin{verbatim}
+> library(HDInterval)
+> hdi(bikemod)
+      (Intercept) temp_feel  sigma2
+lower  -1174.6978  51.37127 1542111
+upper   -188.8293  64.29288 1896111
+attr(,"credMass")
+[1] 0.95
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+ \frametitle{ Bike Regression: Quantiles and Credible Intervals    }
+Monte Carlo standard errors are always a good idea!.\\
+
+\vspace{.4cm}
+ 
+Quantiles and their Monte Carlo standard errors (\texttt{mcmcse}):
+\begin{verbatim}
+> mcse.q.mat(bikemod, method = "bm", q=.025) 
+                      est           se
+(Intercept)   -1160.45971 5.456536e+00
+temp_feel        51.39404 9.531083e-02
+sigma2      1550503.18969 1.889143e+03
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Wrapping Up}
+
+
+
+\begin{block}{Basic Bayesian Steps}
+
+\begin{enumerate}
+\item Select a model and priors
+\item Approximate the posterior via Markov chain Monte Carlo
+\item Check the posterior approximation (e.g. sufficient samples)
+\item Use the MCMC samples to conduct inference 
+ \end{enumerate}
+\end{block}
+
+\pause
+
+\vspace{.5cm}
+
+\begin{block}{Some R Packages}
+
+\begin{itemize}
+\item \texttt{MCMCpack} for making specific Bayesian models
+\item \texttt{mcmc} for general MCMC sampling
+\item \texttt{stableGR} for assessing the posterior approximation with Gelman-Rubin diagnostic (psrf) and effective sample size
+\item \texttt{mcmcse} for conducting multivariate analyses on the posterior
+\end{itemize}
+\end{block}
+
+
+\end{frame}
+
+\begin{frame}
+\frametitle{More Information}
+
+\begin{center}
+
+\vspace{.5cm}
+
+{\huge{Questions?}} \\
+
+\vspace{1cm}
+
+{\large{\url{cknudson.com}}}\\
+
+\vspace{.5cm}
+
+
+
+
+knud8583@stthomas.edu \\
+
+
+\vspace{2cm} 
+
+\end{center}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{References}
+\small  
+
+James M. Flegal, John Hughes, Dootika Vats, and Ning Dai. (2018). mcmcse: Monte
+  Carlo Standard Errors for MCMC. R package version 1.3-3. Riverside, CA, Denver,
+  CO, Coventry, UK, and Minneapolis, MN. \\
+
+\vspace{.15cm}
+
+
+Gelman, A. and Rubin, D. B. (1992). Inference from iterative simulation using multiple sequences (with discussion). \textit{Statistical Science}, 7:457-472.\\
+
+\vspace{.15cm}
+
+Charles J. Geyer and Leif T. Johnson (2019). mcmc: Markov Chain Monte Carlo. R
+  package version 0.9-6. \url{https://CRAN.R-project.org/package=mcmc} \\
+
+\vspace{.15cm}
+
+Christina P. Knudson and Dootika Vats (2019). stableGR: A Stable Gelman-Rubin Diagnostic
+  for Markov Chain Monte Carlo. R package version 1.0.
+\url{  https://CRAN.R-project.org/package=stableGR}. \\
+
+
+
+\vspace{.15cm}
+
+Andrew D. Martin, Kevin M. Quinn, Jong Hee Park (2011). MCMCpack: Markov Chain
+  Monte Carlo in R. Journal of Stat Software. 42(9): 1-21. \\
+
+\vspace{.15cm}
+
+Vats, D., Flegal, J. M, and Jones, G. L. (2019). Multivariate output analysis for Markov chain Monte Carlo. \textit{Biometrika},  106(2):321-337. \\
+
+\vspace{.15cm}
+
+Vats, D. and Knudson, C. Revisiting the Gelman-Rubin diagnostic, arXiv:1812.09384 (under review).
+
+
+\end{frame}
+
+
+
+
+
+
+
+
+\begin{frame}
+\frametitle{ Additional Concerns:  MCMC  Convergence      }
+If the MCMC sampler runs long enough, it will produce an adequate approximation of the posterior distribution.\\
+
+\vspace{.75cm}
+
+Two types of convergence in MCMC. Run long enough to:
+\begin{itemize}
+\item Cover all the plausible parameter values
+\item Produce a sufficiently detailed approximation
+\end{itemize}
+
+\vspace{.5cm}
+
+This is a big area of research!\\
+
+\vspace{.5cm}
+
+ Sorry that we can't cover convergence in this introductory talk. 
+
+\end{frame}
+
+\begin{frame}
+ \frametitle{ Stopping the  MCMC  Sampler    }
+
+How can we decide to stop sampling? \\
+
+\vspace{.5cm}
+
+ We could terminate after:
+
+\begin{itemize}
+\item A fixed number of steps
+\item The Monte Carlo standard error becomes sufficiently small
+\item A diagnostic (e.g. Gelman-Rubin) hits a threshold
+
+\end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{ Additional Concerns:  Number of Chains      }
+Clearly, it's better to have more samples. \\
+
+\vspace{.5cm}
+
+But how should we get those samples? From one long chain or several shorter chains? \\
+
+\vspace{.5cm}
+
+Asking this question is a good way to start a fight amongst Bayesians!
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Commands for Installing R Package stableGR from Github}
+
+
+\begin{verbatim}
+  #get some required packages
+install.packages("Rcpp") 
+install.packages("RcppArmadillo")
+install.packages("devtools")
+
+  #install mcmcse from github  (rather than CRAN) 
+library(devtools)
+install_github("dvats/mcmcse")
+
+  #install stableGR package
+install_github("knudson1/stableGR/stableGR")
+library(stableGR)
+\end{verbatim}
+Will be available on CRAN in a couple months. \\
+
+\end{frame}
+
+
+
+\end{document}
