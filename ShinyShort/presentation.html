@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>An Exploration with Shiny</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Soumya Kalra" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css/rladies-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# An Exploration with Shiny
+## Awakening greatness one project at a time
+### Soumya Kalra
+### 2019/08/11
+
+---
+
+
+
+
+# This Talk:
+
+1. Introductions
+2. Why Shiny &amp; Why Now? 
+3. Basics of Shiny
+4. UI with Shiny 
+5. Reactive Programming 
+6. Future development
+7. A few more cool applications
+---
+
+# Hi I am Soumya!
+
+--
+
+- R-Ladies New York Founder
+
+--
+
+- R/Finance Committee Member
+
+--
+
+- Quantitative analyst in the public sector
+
+--
+
+- Do a lot of hands of development in Shiny 
+
+--
+
+- disclaimer: all views in this presentation do not represent the views of my employer and are entirely my own. 
+
+--
+
+## Let's keep talking...
+&lt;a href="mailto:sokal1456@gmail.com"&gt;&lt;i class="fa fa-paper-plane fa-fw"&gt;&lt;/i&gt;&amp;nbsp; sokal1456@gmail.com&lt;/a&gt;&lt;br&gt;
+&lt;a href="http://twitter.com/SK_convergence"&gt;&lt;i class="fa fa-twitter fa-fw"&gt;&lt;/i&gt;&amp;nbsp; @SK_convergence&lt;/a&gt;&lt;br&gt;
+---
+Packages required to be installed:
+
+- shiny 
+- ggplot2 
+- fivethirtyeight
+- dbplyr
+- DT
+
+---
+
+## Throughout this talk we will switch back and forth between demos and slides.  
+
+## Materials from this talk can be found here: https://github.com/sokal1456/northR
+
+
+
+---
+# A big thank you to the many shiny tutorials out there by Joe Cheng, the Rstudio Shiny team and Dean Attali that helped me learn and helped inspire this tutorial today.
+
+
+---
+
+# What is Shiny?
+
+- Rstudio package authored by Joe Cheng
+
+--
+
+- Web development framework for R
+
+--
+
+- Can be used to build interactive web pages with R
+
+---
+
+# Why is Shiny amazing?
+
+--
+
+- No knowledge of HTML/CSS/JavaScript required
+
+--
+
+- Can share R analysis with any audience type.
+
+--
+
+- So many bells and whistles you can add to applications
+
+---
+
+background-image: url("https://media.giphy.com/media/Ta1zCPgNNr2GQ/giphy.gif")
+class: center, inverse
+
+---
+
+# Let's get started: Install shiny!
+
+
+
+```r
+# install.pacakges("shiny")
+library(shiny)
+runExample("01_hello")
+```
+
+
+
+# See how your code works: Run it in showcase mode
+
+- runApp('Code/Exercises/add_title_03.R', display.mode = "showcase")
+
+- runExample("01_hello")
+
+- code is highlighted in server as it is run
+
+---
+
+
+# Shiny App Basics: Part 1
+
+- Every Shiny App is made up of two parts
+
+--
+
+- UI: a web page that shows the app to the user. UI is HTML using Shiny’s functions and is where the layout of hte app is defined (how the app looks). 
+
+- Server: a computer that powers the app that has the logic of the functionality. 
+
+---
+
+# Shiny App Basics: Part 2
+
+## Shiny Template 
+
+
+```r
+library(shiny)
+ui &lt;- fluidPage()
+server &lt;- function(input, output) {}
+shinyApp(ui = ui, server = server)
+```
+
+---
+
+# Running a Shiny app: Method 1
+
+--
+
+### Create a standalone app.R 
+--
+
+- All your code is in one place
+
+--
+
+- your file must be named app.R for Rstudio to recognize it as a shiny app.
+
+--
+
+- Your turn: Run app01.R
+
+
+???
+
+Run app01.R
+
+---
+
+# Running a Shiny app: Method 2
+
+--
+
+### Create a ui.R and server.R 
+--
+
+- This is great for more complex applications
+
+--
+
+- our examples today will primarily be app.R files to make the concepts easy to follow.
+
+--
+
+- Your turn: Open folder App_02 and run either the ui or server file.
+
+???
+
+Run app02.R
+
+---
+
+# Running a Shiny app: Method 3
+
+--
+
+### In Rstudio &gt;&gt; File &gt;&gt; Shiny Web App
+--
+
+- this will automatically set up the template for you.
+
+--
+
+- you can customize it like app
+
+
+---
+
+#Exercise 01
+
+## Let's a run real app: Go to Exercises and Run add_title_03.R
+
+???
+Pause 1 minute
+---
+
+## Your turn: Add a title to this app reference code in add_title_03.R
+
+???
+
+Pause 1 minute
+
+---
+# Shiny App Contents
+
+--
+- UI: Layout and app appearance
+
+
+```r
+ui &lt;- fluidePage() 
+```
+--
+- Server: instructions to build the app
+
+```r
+server &lt;- function(input, output){} 
+
+shinyApp(ui=ui, server=server)
+```
+
+---
+
+## Now let's build a real app using college grad student data (fivethirtyeight package) 
+
+--
+
+- Two requirements: 
+
+- Axis Inputs: users can enter what they want to plot.
+
+- Plot: return the plot based on the axis inputs selected.
+
+
+---
+# App Basics
+
+- Step 1:load the data from five thirty eight
+
+```r
+library(shiny)
+library(fivethirtyeight)
+ui &lt;- fluidPage()
+server &lt;- function(input, output) {}
+shinyApp(ui = ui, server = server)
+```
+
+
+---
+background-image: url("https://media.giphy.com/media/xUA7bb57OiYdtIk6xG/giphy.gif")
+class: center, inverse
+
+---
+
+# Remember the ui portion of the app 
+
+
+```r
+library(shiny)
+library(fivethirtyeight)
+ui &lt;- fluidPage()
+server &lt;- function(input, output) {}
+shinyApp(ui = ui, server = server)
+```
+
+
+---
+# UI Basics: Part 1
+
+## Inputs and Outputs
+
+- fluidPage - sets up basic visual structure of a page.
+
+- selectInput(others like it): allow users to interact and provide a value
+
+- verbatimTextOutput() and tableOutput() are output controls that tell Shiny where to put the output.
+
+
+---
+
+# UI Basics: Part 2
+
+- UI simply creates HTML (Shiny allows you to create UI without having to know HTML)
+
+
+```r
+sliderInput("num", "Choose a number",
+            min = 0, max = 500, value = 10)
+```
+
+HTML code
+
+```r
+&lt;div class="form-group shiny-input-container"&gt;
+  &lt;label class="control-label" for="num"&gt;Choose a number&lt;/label&gt;
+  &lt;input class="js-range-slider" id="num" data-min="0" data-max="500" data-from="10" data-step="1" data-grid="true" data-grid-num="10" data-grid-snap="false" data-prettify-separator="," data-keyboard="true" data-keyboard-step="1" data-drag-interval="true" data-data-type="number"/&gt;
+&lt;/div&gt; 
+```
+
+---
+
+# UI Basics: Part 3
+
+--
+
+- HTML tags can be found at http://shiny.rstudio.com/articles/tag-glossary.html
+
+--
+
+- Simple ones: h1() = header1, br() = line break, strong() = bold text
+
+--
+
+- You can access HTML tag using `tags` object
+
+--
+
+- h2 = tags$h2(), br = tags$br()
+
+--
+
+- Don't have to use `tags` for common objects
+
+
+---
+
+#UI with HTML example: Run ui_html_05.R
+
+```r
+library(shiny)
+ui &lt;- fluidPage(
+	h1("Shiny App Title"),
+	h4("This is awesome"),
+	"Hello",
+"Shiny workshop",
+br(),
+strong("bold text")
+)
+server &lt;- function(input, output) {}
+shinyApp(ui = ui, server = server)
+```
+???
+
+- Pause 1 minute
+- in the demo_examples folder
+
+---
+# UI with Layouts
+
+- Typically all items stack up after the other.
+
+--
+
+- Layouts: http://shiny.rstudio.com/articles/layout-guide.html
+
+--
+
+- advanced layouts: fluidRow and column to build your layout up from a grid system or navbarpage
+
+---
+
+# We’ll use sidebarLayout(): Run Basics_ui_04.R and basics_ui_right_04.R
+
+---
+
+```r
+library(shiny)
+ui &lt;- fluidPage(
+  titlePanel("title panel"),
+
+  sidebarLayout(
+    sidebarPanel("sidebar panel"),
+    mainPanel("main panel")
+  )
+)
+server &lt;- function(input, output) {}
+shinyApp(ui = ui, server = server)
+```
+???
+
+- fluidpage creates a page that dynamically adapts to the size of your window
+
+- look at basics_ui_right_04.R for examples
+
+- this is also in the demo_examples folder
+
+
+---
+
+# You can also use tags within *Panel command: UI with Layout and HTML
+
+### Open and run tags_html_06.R
+
+---
+
+# UI: Widgets
+
+- shiny also has built in widgets 
+
+.pull-center[
+![](img/shiny_widgets.png)]
+
+---
+
+# UI: Widgets
+
+- you can add widgets in your sidebarPanel or mainPanel of the app
+
+- All widgets have the first two arguments in common:
+
+    1. name for the widget so you can access the widget and trigger actions or effects.
+    2. label: the name of the widget in your app. 
+    
+- learn more about widgets: https://shiny.rstudio.com/tutorial/written-tutorial/lesson3/
+
+---
+
+# Let's go back to the app we were trying to build with college grad data
+
+
+.pull-center[
+![](img/college_grad_ui.png)]
+
+
+---
+
+# Session
+
+- A session is the state of one live instance of a running shiny app
+
+- begins when app is loaded in a browser 
+
+- each session needs to be independent to avoid overlapping actions
+
+- the server function is called once for each session (private scope) so every variable inside the server function is only available to that function.
+---
+
+# Server 
+
+- Three components:input, output, session
+
+- session begins when shiny app runs
+
+- input:  list-like object that has all the input data from the user interaction with the browser
+
+
+```r
+ui &lt;- fluidPage(
+  numericInput("count", label = "Number of values", value = 100)
+)
+```
+---
+# Server
+- input objects are read only from the browser(ultimate source of info). So this will return an error:
+
+
+```r
+server &lt;- function(input, output, session) {
+  input$length &lt;- 85 
+}
+
+shinyApp(ui, server)
+# Error: Attempted to assign value to a read-only reactivevalues object
+```
+- can only be read in a reactive context like renderPlot() or reactive()
+
+---
+
+# Server : Render function
+
+- Outputs are reactive: Shiny recalculates them as the user interacts and changes them.
+
+- there is a **render** function designed for each type of output: renderPrint, renderTable, renderPlot, etc. 
+
+.pull-center[
+![](img/shiny_render.png)]
+
+---
+
+# Server: Render Function (cont'd)
+
+- render functions do two things:
+
+  1.  reactive contexts that tracks inputs for outputs uses 
+
+  2.  converts R code to HTML to display
+
+
+---
+# Server
+- output: list-like object named after the output ID. This is to send info back to the browser
+
+
+```r
+ui &lt;- fluidPage(
+  textOutput("message")
+)
+
+server &lt;- function(input, output, session) {
+  output$message &lt;- renderText({
+    "Hello shiny course!"
+  })
+}
+```
+---
+# Introducing Reactivity
+
+- Shiny uses reactivity to make apps interactive (Stay tuned.)
+
+--
+
+- In reactivity, you are telling someone how to do something without telling them to actually do it (just instructions)
+
+-- 
+
+- Example: 
+
+
+
+```r
+server &lt;- function(input, output, session) {
+  output$summary &lt;- renderPrint({
+    dataset &lt;- get(input$dataset, "package:datasets", inherits = FALSE)
+    summary(dataset)
+  })
+  
+  output$table &lt;- renderTable({
+    dataset &lt;- get(input$dataset, "package:datasets", inherits = FALSE)
+    dataset
+  })
+}
+```
+
+???
+
+The left-hand side of the assignment operator (&lt;-), output$IDENTIFIER, indicates that you’re providing the recipe for the Shiny output with the matching ID. The right-hand side of the assignment specifies uses a specific render function to wrap a code block that you provide; in the example above, we use renderPrint and renderTable wrap our app-specific logic.
+
+---
+
+# Let's finish our example from earlier with college grad data
+
+
+```r
+  output$scatterplot &lt;- renderPlot({
+    ggplot(data = college_recent_grads, aes_string(x = input$x, y = input$y)) +
+      geom_point()+
+      theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  })
+}
+```
+
+---
+
+# Summary to build shiny apps
+
+Step 1: Create app from template 
+
+Step 2: Add to the fluidPage()
+
+Step 3: Use Input() functions to create inputs
+
+Step 4: Use Output() functions to create outputs
+
+Step 5: Use server to connect Input and outputs
+
+---
+# Run college_grad_app.R
+
+--- 
+
+# Your turn: Exercise 02
+
+- create a new input for the user to select the line type to display (selectinput)
+- inputid: line
+- label = "Line Type",
+- choices = c("dashed", "dotted")
+- selected = "mpaa_rating")
+
+- Use this to update the ggplot function in server.R
+
+???
+
+5 minutes 
+
+---
+
+# Solution: college_grad_app_02.R
+
+---
+
+#Your turn: Exercise 03
+
+- use checkboxInput to show the data summary.
+
+- create a new DT:rendertable item to show the underlying data 
+
+- show the first 10 rows of the data in the summary using dataTableOutput
+
+- update college_grad_app_02.R in the Exercises folder
+
+???
+
+5 minutes
+
+---
+# Reactivity
+
+- Shiny uses a reactive framework
+
+- supports reactive functionality
+
+- When value of variable z changes, anything that relies on z is re-evaluated
+
+- Regular R expressions would need to get updated with new values
+
+---
+# Reactivity
+- input$plot_num is a reactive value
+
+
+```r
+output$myplot &lt;- renderPlot({
+    plot(rnorm(input$plot_num))
+})
+```
+
+- output$myplot depends on input$plot_num 
+
+- All inputs are automatically reactive, so if you use any input inside a render* function, the output will re-render any time input changes
+
+---
+
+# Reactive Objects
+
+- Three objects
+
+--
+
+- Reactive source: user input through browser interaction (reactiveValues()) 
+Ex: "input$"
+
+--
+
+- Reactive endpoint: resulting plot or table that appears in the app (reactive())
+Ex: the filtered datasets we will create
+--
+
+- Reactive conductor: connects sources and endpoints together (observe())
+Ex: output
+---
+
+# Reactive Objects demo
+
+--
+
+- let's update the college grad data app to include the following:
+
+--
+
+- Include a dropdown filter on major category
+
+--
+
+- filter and save as reactive expression
+
+-- 
+
+- show the filtered data in the plot
+
+-- 
+
+- show the filtered data in the table
+
+---
+
+# Let's create the dropdown in the UI section
+
+
+```r
+  selectInput(inputId = "major_category", 
+              label = "Major Category",
+              choices = c(unique(college_recent_grads$major_category)),
+              selected = "Engineering")
+  ),
+```
+
+--- 
+
+# Reactive Expression
+
+- In server.r: 
+
+```r
+# library dbplyr
+  major_subset&lt;-reactive({
+    req(input$major_category)
+    filter(college_recent_grads, major_category %in% input$major_category)
+  })
+```
+
+---
+# Use the new dataset in your plot and table
+
+- Use major_subset() in place of your dataset
+
+```r
+ output$college_data &lt;- DT::renderDataTable(
+    if(input$show_data){
+      DT::datatable(data = major_subset(), 
+                    options = list(pageLength = 10), 
+                    rownames = FALSE)
+    }
+ )
+```
+
+---
+
+# Your turn: Open college_grad_app_05.R and correct to make the title function work using reactive expressions
+
+???
+
+5 minutes
+
+
+---
+
+Solution: college_grad_app_06.R
+
+---
+# Reactives Summary
+
+--
+
+- **Reactive** variable means anything that depends on it gets re-executed automatically
+
+--
+
+- Use to reduce duplication
+
+--
+
+- Make it easier to handle complex calculations
+
+---
+
+# Reactive Context
+
+- Reactive values can only be used in reactive contexts: 3 ways
+
+--
+
+- Any render* function is a reactive context
+
+--
+
+- Use reactive({...})  to assign a reactive variable
+
+--
+
+- Use observe({...})  to access a reactive variable
+
+
+---
+
+# This means you can't do this:
+
+```r
+server&lt;-function(input, output, session){
+  print(input$x)
+}
+
+# Operation not allowed outside a reactive context
+```
+
+---
+# Reactive : Implementation of reactive conductors
+
+- Can access values or other reactive expressions
+
+- can return a value
+
+- useful for caching results (only updated when the value is changed)
+
+
+```r
+server &lt;- function(input, output) {
+	x &lt;- reactive({
+input$num + 1
+		 })
+}
+```
+
+---
+
+# Observe : Implementation of reactive endpoints
+
+- can access reactive sources and reactive expressions
+
+- **don't** return value
+
+- used for side effects
+
+
+```r
+server &lt;- function(input, output) {
+	observe({
+        print(input$num)
+    })
+}
+```
+---
+
+# Walk through a demo of using observe
+
+- Let's say we want to add an alert to our app to say "Hi user!"
+
+---
+
+# Adding Observe in the UI
+
+
+```r
+actionButton("button1","Directions")
+```
+---
+
+Adding Observe to the server
+
+
+```r
+observe({
+    input$button1
+    showModal(modalDialog(
+      title = "Directions",
+      "You are looking at recent college grad data from the five thiry eight package in R"
+    ))
+})
+```
+---
+
+Summary: Reactives vs. Observers
+
+- Both contain expressions that can be executed
+
+- Differences:
+
+- reactive expressions return values but observers don't
+
+- observers "eagerly" respond to reactives but reactive expressions don't 
+
+- reactive expressions should not have side effects and observers are only useful for 
+their side effects
+
+
+---
+  
+# Your turn: Add your own observe button to show a pop up message 
+
+# looking for volunteers to present their solution!
+  
+
+---
+
+# Publishing your apps
+
+- Go to http://www.shinyapps.io/ and make an account
+- Make sure all your app files are in an isolated folder
+- Click “Publish Application” in RStudio (you might need to follow instructions)
+
+---
+
+# Inlude shiny in your reports!
+
+- Set output: html_document
+- Set runtime: shiny
+- You can now use interactive inputs/outputs in Rmarkdown!
+
+---
+# Other cool things as noted by Dean Attali 
+- conditionalPanel - conditionally show UI elements
+- global.R - objects here are available to both ui.R and server.R
+- Use navbarPage() or tabsetPanel() for multiple tabs in UI
+- Use DT::dataTableOutput() instead of tableOutput() for an interactive table instead of ugly static table
+_ Add images by placing image under “www/image.png” and using UI function img(src = "image.png")
+- Use update*Input() functions to update input values from R
+
+--- 
+
+# Discover more shiny packages
+
+- leaflet (http://rstudio.github.io/leaflet/)
+Add interactive maps to your apps
+- shinyjs (https://github.com/daattali/shinyjs)
+Enhance user experience in Shiny apps
+- shinythemes (http://rstudio.github.io/shinythemes/)
+Easily alter the appearance of your app
+- shinyalert (http://ggvis.rstudio.com/)
+Create pop up messages in shiny
+- shinydashboard (https://rstudio.github.io/shinydashboard/)
+Gives you tools to create “dashboards”
+
+
+---
+
+# Get Inspired
+
+- Rstudio Shiny gallery:  https://shiny.rstudio.com/gallery/ (there was an even a shiny competiton this past year!)
+
+- Show me Shiny : https://shiny.rstudio.com/gallery/
+
+---
+# Other Resources
+
+- Shiny official tutorial http://shiny.rstudio.com/tutorial
+- Shiny cheatsheet http://shiny.rstudio.com/images/shiny-cheatsheet.pdf
+- Lots of short useful topics http://shiny.rstudio.com/articles
+- Shiny in Rmarkdown http://rmarkdown.rstudio.com/authoring_shiny.html
+- Get help from http://stackoverflow.com/questions/tagged/shiny  
+- Publish your app free with RStudio http://www.shinyapps.io
+
+---
+# Thank you!
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
