@@ -16,7 +16,7 @@ incremental: true
 - ... let's go to the code.
 
 
-Your Genius Insights are Eclipesed by Technical Difficulties
+Your Genius Insights are Eclipsed by Awkward Tooling
 ========================================================
 incremental: true
 
@@ -56,14 +56,6 @@ Key R Markdown Pieces: Header
 Key R Markdown Pieces: Header
 ========================================================
 
-![](img/rmd-shot1_box-header.png)
-
-
-
-
-Key R Markdown Pieces: Header
-========================================================
-
 ![](img/header-basic.png)
 
 
@@ -95,8 +87,6 @@ Other key features:
 - Code folding
 - Custom CSS
 
-See: https://bookdown.org/yihui/rmarkdown/html-document.html
-
 
 
 Key R Markdown Pieces: Commentary
@@ -112,10 +102,12 @@ Key R Markdown Pieces: Code, Images
 ![](img/rmd-shot2-code_inline_side-by-side.png)
 
 
+
 Key R Markdown Pieces: Code, Tables
 ========================================================
 
 ![](img/kable-table.png)
+
 
 
 Key R Markdown Use Cases
@@ -199,7 +191,6 @@ incremental: true
 
 - You have lots of insights to share, but blast emailing people your insights is found "annoying" to the less enlighted.
 - Many "easy" website solutions are overkill on one hand, and don't support the tech analysis features nicely on the other hand.
-- See: https://bookdown.org/yihui/blogdown/
 
 
 
@@ -212,13 +203,13 @@ Blogdown: Setup
 
 
 
-Blogdown: Live Demo?
+Blogdown: Live Demo
 ========================================================
 
 - Install blogdown
 - Create new blogdown site via `New Project...`
 - In 'Addins`, serve site, and then create new blogpost.
-- Show in browswer.
+- Show in browser.
 
 
 
@@ -305,12 +296,17 @@ Resources: RMarkdown
 - RMarkdown Cheat sheet: https://www.rstudio.com/resources/cheatsheets/#rmarkdown
 
 
+Other Links
+========================================================
+
+- I don't like notebooks: https://conferences.oreilly.com/jupyter/jup-ny/public/schedule/detail/68282
 
 
 
-Me, Your Presenter
+Thank You
 ========================================================
 Matt Pettis
 
 Sr. Data Scientist, Trane Inc.
 
+matthew.pettis@gmail.com
